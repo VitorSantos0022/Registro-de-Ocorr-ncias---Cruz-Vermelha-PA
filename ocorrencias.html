@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Ocorrências - Cruz Vermelha PA</title>
+    <!-- Tailwind CSS para design limpo e rápido -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Biblioteca do Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Biblioteca para gerar PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --cv-red: #D6001C;
+            --cv-dark-red: #B00017;
+        }
+        .bg-cv-red { background-color: var(--cv-red); }
+        .text-cv-red { color: var(--cv-red); }
+        .hover-cv-red:hover { background-color: var(--cv-dark-red); }
+    </style>
+</head>
+<body class="bg-[#F5F5F5] text-[#202020] font-sans antialiased pb-10">
+
+    <!-- TELA DE LOGIN (PADRÃO SEGURO) -->
+    <div id="telaLogin" class="fixed inset-0 bg-gray-100 flex items-center justify-center z-50 px-4">
+        <div class="bg-white p-6 rounded-xl shadow-md border border-[#D9D9D9] w-full max-w-sm text-center">
+            <div class="w-16 h-16 bg-cv-red text-white flex items-center justify-center rounded-full mx-auto mb-3 text-2xl font-bold">🚨</div>
+            <h2 class="text-lg font-bold text-cv-red uppercase tracking-wide">Cruz Vermelha Brasileira</h2>
+            <p class="text-xs text-gray-500 mb-4">Filial do Pará | Registro de Ocorrências</p>
+            
+            <form id="loginForm" class="space-y-3 text-left">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-gray-600">E-mail voluntário</label>
+                    <input type="email" id="loginEmail" required class="w-full p-2.5 border border-[#D9D9D9] rounded focus:outline-none focus:border-red-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-gray-600">Senha de Acesso</label>
+                    <input type="password" id="loginSenha" required class="w-full p-2.5 border border-[#D9D9D9] rounded focus:outline-none focus:border-red-500 text-sm">
+                </div>
+                <button type="submit" class="w-full bg-cv-red hover-cv-red text-white font-bold py-2.5 rounded shadow transition text-sm uppercase mt-2">
+                    🔓 Entrar no Sistema
+                </button>
+            </form>
+            <p id="loginErro" class="text-xs text-red-600 mt-2 hidden">E-mail ou senha incorretos.</p>
+        </div>
+    </div>
+
+    <!-- CONTEÚDO PRINCIPAL (FICA OCULTO ATÉ FAZER LOGIN) -->
+    <div id="conteudoApp" class="hidden">
+        <!-- CABEÇALHO -->
+        <header class="bg-cv-red text-white p-4 text-center shadow-md sticky top-0 z-40 flex justify-between items-center">
+            <div class="text-left">
+                <h1 class="text-md font-bold tracking-wide uppercase">Cruz Vermelha Brasileira</h1>
+                <p class="text-[10px] opacity-90">Filial do Estado do Pará | Registro de Ocorrências</p>
+            </div>
+            <button onclick="fazerLogout()" class="text-xs bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded">Sair</button>
+        </header>
+
+        <main class="max-w-md mx-auto mt-4 px-4">
+            
+            <!-- SEÇÃO: FORMULÁRIO DE OCORRÊNCIA -->
+            <section class="bg-white p-5 rounded-xl shadow-sm border border-[#D9D9D9]">
+                <div class="flex items-center justify-between mb-4 border-b pb-2 border-[#D9D9D9]">
+                    <div class="flex items-center gap-2">
+                        <span class="text-2xl">📝</span>
+                        <h2 id="tituloForm" class="text-lg font-bold text-cv-red">Nova Ocorrência</h2>
+                    </div>
+                    <span id="badgeEdicao" class="hidden text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded uppercase">Editando</span>
+                </div>
+
+                <form id="ocorrenciaForm" class="space-y-4">
+                    <input type="hidden" id="editId"> <!-- Campo invisível para ID de edição -->
+
+                    <!-- Data e Hora (Automáticos, mas Editáveis) -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-gray-600">Data do Fato</label>
+                            <input type="date" id="data_ocorrencia" required class="w-full p-2 border border-[#D9D9D9] rounded focus:outline-none focus:border-red-500 text-sm bg-gray-50">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-gray-600">Hora do Fato</label>
+                            <input type="time" id="hora_ocorrencia" required class="w-full p-2 border border-[#D9D9D9] rounded focus:outline-none focus:border-red-500 text-sm bg-gray-50">
+                        </div>
+                    </div>
+
+                    <!-- Dados Básicos -->
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-gray-600">Nome da Pessoa / Vítima</label>
+                        <input type="text" id="nome_vitima" required class="w-full p-2 border border-[#D9D9D9] rounded focus:outline-none focus:border-red-500 text-sm">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-gray-600">Data de Nascimento</label>
+                            <input type="date" id="data_nascimento" class="w-full p-2 border border-[#D9D9D9] rounded focus:outline-none focus:border-red-500 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-gray-600">Status Atual</label>
+                            <select id="status" class="w-full p-2 border border-[#D9D9D9] rounded focus:outline-none focus:border-red-500 text-sm bg-white">
+                                <option value="Aberta">Aberta</option>
+                                <option value="Em Atendimento">Em Atendimento</option>
+                                <option value="Encerrada">Encerrada</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-gray-600">Responsável (Se aplicável)</label>
+                        <input type="text" id="nome_responsavel" placeholder="Nome do pai, mãe ou tutor" class="w-full p-2 border border-[#D9D9D9] rounded focus:outline-none focus:border-red-500 text-sm">
+                    </div>
+
+                    <!-- Descrição Longa da Ocorrência -->
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-gray-600">Descrição da Ocorrência</label>
+                        <textarea id="descricao_ocorrencia" rows="5" required placeholder="Descreva aqui detalhadamente todo o acontecimento, procedimentos realizados e observações..." class="w-full p-2 border border-[#D9D9D9] rounded focus:outline-none focus:border-red-500 text-sm min-h-[120px]"></textarea>
+                    </div>
+
+                    <!-- Foto (Opcional) -->
+                    <div class="bg-gray-50 p-3 rounded-lg border border-dashed border-gray-400 text-center">
+                        <label class="block text-xs font-bold uppercase text-gray-600 mb-2">📷 Fotografar Evidência (Opcional)</label>
+                        <input type="file" id="fotoInput" accept="image/*" capture="environment" class="hidden">
+                        <button type="button" onclick="document.getElementById('fotoInput').click()" class="bg-gray-600 text-white px-3 py-1.5 rounded text-xs font-semibold shadow hover:bg-gray-700 transition">
+                            Tirar Foto ou Galeria
+                        </button>
+                        <button type="button" id="btnRemoverFoto" onclick="removerFotoAnexada()" class="hidden ml-2 bg-red-600 text-white px-2 py-1.5 rounded text-xs font-semibold shadow hover:bg-red-700 transition">✖</button>
+                        <div id="previewContainer" class="mt-2 hidden flex justify-center">
+                            <img id="fotoPreview" src="" class="h-28 w-full object-cover rounded-md border shadow-sm max-w-xs">
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button type="submit" id="btnSalvar" class="flex-1 bg-cv-red hover-cv-red text-white font-bold py-3 px-4 rounded-lg shadow transition uppercase tracking-wider text-sm">
+                            💾 Salvar Ocorrência
+                        </button>
+                        <button type="button" id="btnCancelarEdicao" onclick="cancelarEdicao()" class="hidden bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-lg shadow transition text-sm">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- SEÇÃO: HISTÓRICO DE OCORRÊNCIAS -->
+            <section class="bg-white p-5 rounded-xl shadow-sm border border-[#D9D9D9] mt-6">
+                <div class="flex items-center gap-2 mb-4 border-b pb-2 border-[#D9D9D9]">
+                    <span class="text-2xl">📋</span>
+                    <h2 class="text-lg font-bold text-cv-red">Histórico de Ocorrências</h2>
+                </div>
+                
+                <!-- Barra de Pesquisa Completa -->
+                <div class="space-y-2 mb-4 bg-gray-50 p-2.5 rounded border border-[#D9D9D9]">
+                    <input type="text" id="buscaInput" oninput="buscarOcorrencias()" placeholder="🔎 Nome, responsável ou palavras-chave da descrição..." class="w-full p-2 border border-[#D9D9D9] rounded bg-white focus:outline-none focus:border-red-500 text-xs">
+                    
+                    <div class="flex gap-2 items-center">
+                        <label class="text-[11px] font-bold text-gray-500 uppercase whitespace-nowrap">Por Data:</label>
+                        <input type="date" id="filtroData" onchange="buscarOcorrencias()" class="w-full p-1.5 border border-[#D9D9D9] rounded bg-white focus:outline-none focus:border-red-500 text-xs">
+                        <button onclick="limparFiltroData()" class="text-xs text-gray-500 hover:text-red-500 px-1 font-bold">✖</button>
+                    </div>
+                </div>
+
+                <!-- Lista de Cards -->
+                <div id="listaOcorrencias" class="space-y-3 max-h-96 overflow-y-auto pr-1">
+                    <p class="text-center text-xs text-gray-400">Carregando registros...</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- SCRIPT LOGIC -->
+    <script>
+        // CONFIGURAÇÃO DO SUPABASE
+        // ⚠️ SUBSTITUA COM AS SUAS CREDENCIAIS DO SUPABASE
+        const SUPABASE_URL = "https://ucfuqkksyzympgvuujhv.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_-6VJMj04631U4cMQyiOZdQ_jXQuVF1O";
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let fotoBase64 = "";
+
+        // Inicializar com Data e Hora Atuais nos inputs
+        function resetarDataHoraCampos() {
+            const agora = new Date();
+            document.getElementById('data_ocorrencia').value = agora.toISOString().split('T')[0];
+            document.getElementById('hora_ocorrencia').value = agora.toTimeString().split(' ')[0].substring(0,5);
+        }
+
+        // LOGIN DO VOLUNTÁRIO
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const senha = document.getElementById('loginSenha').value;
+            const erroEl = document.getElementById('loginErro');
+
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
+
+            if (error) {
+                erroEl.textContent = "Acesso negado: " + error.message;
+                erroEl.classList.remove('hidden');
+            } else {
+                erroEl.classList.add('hidden');
+                document.getElementById('telaLogin').classList.add('hidden');
+                document.getElementById('conteudoApp').classList.remove('hidden');
+                resetarDataHoraCampos();
+                buscarOcorrencias();
+            }
+        });
+
+        function fazerLogout() {
+            supabaseClient.auth.signOut();
+            document.getElementById('telaLogin').classList.remove('hidden');
+            document.getElementById('conteudoApp').classList.add('hidden');
+            document.getElementById('loginForm').reset();
+        }
+
+        function limparFiltroData() {
+            document.getElementById('filtroData').value = "";
+            buscarOcorrencias();
+        }
+
+        // Captura de Imagem e Conversão Base64
+        document.getElementById('fotoInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    fotoBase64 = event.target.result;
+                    document.getElementById('fotoPreview').src = fotoBase64;
+                    document.getElementById('previewContainer').classList.remove('hidden');
+                    document.getElementById('btnRemoverFoto').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function removerFotoAnexada() {
+            fotoBase64 = "";
+            document.getElementById('fotoInput').value = "";
+            document.getElementById('fotoPreview').src = "";
+            document.getElementById('previewContainer').classList.add('hidden');
+            document.getElementById('btnRemoverFoto').classList.add('hidden');
+        }
+
+        // Salvar Nova ou Atualizar Existente
+        document.getElementById('ocorrenciaForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const idEdicao = document.getElementById('editId').value;
+            const dados = {
+                data_ocorrencia: document.getElementById('data_ocorrencia').value,
+                hora_ocorrencia: document.getElementById('hora_ocorrencia').value,
+                nome_vitima: document.getElementById('nome_vitima').value,
+                data_nascimento: document.getElementById('data_nascimento').value || null,
+                status: document.getElementById('status').value,
+                nome_responsavel: document.getElementById('nome_responsavel').value,
+                descricao_ocorrencia: document.getElementById('descricao_ocorrencia').value,
+                foto: fotoBase64,
+                updated_at: new Date().toISOString()
+            };
+
+            try {
+                if (idEdicao) {
+                    // MODO ATUALIZAÇÃO (EDITAR)
+                    const { error } = await supabaseClient.from('ocorrencias').update(dados).eq('id', idEdicao);
+                    if (error) throw error;
+                    alert("Ocorrência atualizada com sucesso!");
+                } else {
+                    // MODO INSERÇÃO (NOVA)
+                    const { data, error } = await supabaseClient.from('ocorrencias').insert([dados]).select();
+                    if (error) throw error;
+                    alert(`Ocorrência Nº ${data[0].numero} registrada no banco.`);
+                }
+                
+                cancelarEdicao();
+                buscarOcorrencias();
+            } catch (err) {
+                alert("Erro ao salvar operação na nuvem. Verifique a conexão.");
+                console.error(err);
+            }
+        });
+
+        // Listar e Buscar Registros (Estilo Google Forms Dinâmico)
+        async function buscarOcorrencias() {
+            const query = document.getElementById('buscaInput').value;
+            const dataFiltro = document.getElementById('filtroData').value;
+            const lista = document.getElementById('listaOcorrencias');
+            lista.innerHTML = "";
+
+            if (!navigator.onLine) {
+                lista.innerHTML = '<p class="text-center text-xs text-amber-600 font-bold">Modo de consulta requer conexão de dados ativa.</p>';
+                return;
+            }
+
+            let rpcQuery = supabaseClient.from('ocorrencias').select('*');
+
+            if (query.length >= 2) {
+                rpcQuery = rpcQuery.or(`nome_vitima.ilike.%${query}%,nome_responsavel.ilike.%${query}%,descricao_ocorrencia.ilike.%${query}%`);
+            }
+            if (dataFiltro) {
+                rpcQuery = rpcQuery.eq('data_ocorrencia', dataFiltro);
+            }
+
+            const { data, error } = await rpcQuery.order('id', { ascending: false });
+
+            if (error || !data || data.length === 0) {
+                lista.innerHTML = '<p class="text-center text-xs text-gray-400">Nenhum registro localizado.</p>';
+                return;
+            }
+
+            data.forEach(item => {
+                const resumo = item.descricao_ocorrencia.length > 60 ? item.descricao_ocorrencia.substring(0, 60) + "..." : item.descricao_ocorrencia;
+                
+                // Mapeamento de Cores para Status
+                let corStatus = "bg-gray-100 text-gray-800";
+                if(item.status === "Aberta") corStatus = "bg-red-100 text-red-800";
+                if(item.status === "Em Atendimento") corStatus = "bg-amber-100 text-amber-800";
+                if(item.status === "Encerrada") corStatus = "bg-green-100 text-green-800";
+
+                const div = document.createElement('div');
+                div.className = "p-3 bg-gray-50 rounded-lg border border-gray-200 text-xs shadow-xs space-y-2";
+                div.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-bold text-gray-900">Nº ${item.numero} - ${item.nome_vitima}</p>
+                            <p class="text-[10px] text-gray-500">${item.data_ocorrencia} às ${item.hora_ocorrencia.substring(0,5)}</p>
+                        </div>
+                        <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase ${corStatus}">${item.status}</span>
+                    </div>
+                    <p class="text-gray-600 bg-white p-2 rounded border border-gray-100">${resumo}</p>
+                    <div class="flex gap-1 justify-end">
+                        <button onclick='visualizarDetalhes(${JSON.stringify(item)})' class="bg-gray-600 text-white px-2 py-1 rounded text-[10px] font-semibold">Visualizar</button>
+                        <button onclick='carregarParaEdicao(${JSON.stringify(item)})' class="bg-amber-600 text-white px-2 py-1 rounded text-[10px] font-semibold">Editar</button>
+                        <button onclick='deletarOcorrencia(${item.id})' class="bg-red-700 text-white px-2 py-1 rounded text-[10px] font-semibold">Excluir</button>
+                        <button onclick='gerarPDFOcorrencia(${JSON.stringify(item)})' class="bg-cv-red text-white px-2 py-1 rounded text-[10px] font-semibold">PDF</button>
+                    </div>
+                `;
+                lista.appendChild(div);
+            });
+        }
+
+        // Visualizar Alerta Completo em tela
+        function visualizarDetalhes(item) {
+            alert(`OCORRÊNCIA REGISTRADA Nº ${item.numero}\n\nStatus: ${item.status}\nPaciente/Vítima: ${item.nome_vitima}\nResponsável: ${item.nome_responsavel || 'Nenhum'}\nNascimento: ${item.data_nascimento || 'Não informado'}\n\nRelato Completo:\n${item.descricao_ocorrencia}`);
+        }
+
+        // Carregar dados nos inputs para permitir Edição
+        function carregarParaEdicao(item) {
+            document.getElementById('editId').value = item.id;
+            document.getElementById('data_ocorrencia').value = item.data_ocorrencia;
+            document.getElementById('hora_ocorrencia').value = item.hora_ocorrencia.substring(0,5);
+            document.getElementById('nome_vitima').value = item.nome_vitima;
+            document.getElementById('data_nascimento').value = item.data_nascimento || "";
+            document.getElementById('status').value = item.status;
+            document.getElementById('nome_responsavel').value = item.nome_responsavel || "";
+            document.getElementById('descricao_ocorrencia').value = item.descricao_ocorrencia;
+            
+            if(item.foto) {
+                fotoBase64 = item.foto;
+                document.getElementById('fotoPreview').src = item.foto;
+                document.getElementById('previewContainer').classList.remove('hidden');
+                document.getElementById('btnRemoverFoto').classList.remove('hidden');
+            } else {
+                removerFotoAnexada();
+            }
+
+            document.getElementById('tituloForm').textContent = "Alterar Ocorrência";
+            document.getElementById('badgeEdicao').classList.remove('hidden');
+            document.getElementById('btnCancelarEdicao').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelarEdicao() {
+            document.getElementById('ocorrenciaForm').reset();
+            document.getElementById('editId').value = "";
+            removerFotoAnexada();
+            resetarDataHoraCampos();
+            document.getElementById('tituloForm').textContent = "Nova Ocorrência";
+            document.getElementById('badgeEdicao').classList.add('hidden');
+            document.getElementById('btnCancelarEdicao').classList.add('hidden');
+        }
+
+        // Exclusão Direta
+        async function deletarOcorrencia(id) {
+            if(confirm("Tem certeza absoluta de que deseja apagar permanentemente este registro do histórico?")) {
+                const { error } = await supabaseClient.from('ocorrencias').delete().eq('id', id);
+                if(error) alert("Erro ao deletar.");
+                else {
+                    alert("Registro removido.");
+                    buscarOcorrencias();
+                }
+            }
+        }
+
+        // Impressão e Geração de PDF Oficial
+        function gerarPDFOcorrencia(item) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Cabeçalho da Cruz Vermelha
+            doc.setFillColor(214, 0, 28);
+            doc.rect(10, 10, 190, 8, 'F');
+            
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(11);
+            doc.setTextColor(255, 255, 255);
+            doc.text("CRUZ VERMELHA BRASILEIRA - FILIAL DO ESTADO DO PARÁ", 15, 16);
+            
+            // Informações do Registro
+            doc.setTextColor(32, 32, 32);
+            doc.setFontSize(14);
+            doc.text(`REGISTRO DE OCORRÊNCIA Nº: ${item.numero}`, 10, 32);
+            doc.setFontSize(10);
+            doc.text(`Status do Registro: ${item.status.toUpperCase()}`, 140, 32);
+            
+            doc.line(10, 36, 200, 36);
+
+            // Detalhes Cronológicos
+            doc.setFont("Helvetica", "bold");
+            doc.text("CRONOLOGIA E HISTÓRICO", 10, 44);
+            doc.setFont("Helvetica", "normal");
+            doc.text(`Data/Hora do Fato: ${item.data_ocorrencia} às ${item.hora_ocorrencia.substring(0,5)}`, 10, 50);
+            doc.text(`Data de Emissão do Documento: ${new Date(item.created_at).toLocaleDateString()} (Última alteração: ${new Date(item.updated_at).toLocaleDateString()})`, 10, 56);
+
+            // Dados da Vítima/Atendido
+            doc.setFont("Helvetica", "bold");
+            doc.text("DADOS DO ATENDIDO / PACIENTE", 10, 68);
+            doc.setFont("Helvetica", "normal");
+            doc.text(`Nome da Pessoa: ${item.nome_vitima.toUpperCase()}`, 10, 74);
+            doc.text(`Data de Nascimento: ${item.data_nascimento ? item.data_nascimento : 'Não informada'}`, 10, 80);
+            doc.text(`Responsável Presente: ${item.nome_responsavel ? item.nome_responsavel.toUpperCase() : 'NÃO DECLARADO / AUSENTE'}`, 10, 86);
+
+            // Linha Divisória para Relato Grande
+            doc.line(10, 94, 200, 94);
+            doc.setFont("Helvetica", "bold");
+            doc.text("RELATO DETALHADO DA OCORRÊNCIA", 10, 102);
+            
+            doc.setFont("Helvetica", "normal");
+            // Divide o texto longo automaticamente para caber nas margens do PDF
+            const linhasDescricao = doc.splitTextToSize(item.descricao_ocorrencia, 180);
+            doc.text(linhasDescricao, 10, 110);
+
+            // Calcular espaço dinâmico ocupado pelo texto para renderizar a imagem abaixo dele
+            let alturaAtual = 110 + (linhasDescricao.length * 6);
+
+            // Adiciona a foto da ocorrência se houver
+            if (item.foto) {
+                if(alturaAtual > 200) { // Se o texto for muito longo, empurra a foto para uma nova folha
+                    doc.addPage();
+                    alturaAtual = 20;
+                }
+                try {
+                    doc.setFont("Helvetica", "bold");
+                    doc.text("EVIDÊNCIA FOTOGRÁFICA ANEXADA", 10, alturaAtual);
+                    doc.addImage(item.foto, 'JPEG', 10, alturaAtual + 5, 75, 55);
+                    alturaAtual += 65;
+                } catch(e) { console.error("Erro na imagem do PDF", e); }
+            }
+
+            // Rodapé de Identificação do Ecossistema Integrado requisitado
+            if(alturaAtual > 250) { doc.addPage(); alturaAtual = 20; }
+            doc.setFontSize(8);
+            doc.setFont("Helvetica", "italic");
+            doc.text("Documento oficial gerado de forma integrada via plataforma Busca & Paradeiro CV.", 10, alturaAtual + 15);
+
+            doc.save(`Ocorrencia_${item.numero}_${item.nome_vitima.replace(/ /g, "_")}.pdf`);
+        }
+
+        // Auto login se houver sessão salva em cache
+        window.onload = async () => {
+            const { data } = await supabaseClient.auth.getSession();
+            if (data?.session) {
+                document.getElementById('telaLogin').classList.add('hidden');
+                document.getElementById('conteudoApp').classList.remove('hidden');
+                resetarDataHoraCampos();
+                buscarOcorrencias();
+            }
+        };
+    </script>
+</body>
+</html>
