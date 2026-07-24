@@ -4,11 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro de Ocorrências - Cruz Vermelha PA</title>
-    <!-- Tailwind CSS para design limpo e rápido -->
+    
+    <!-- ✅ Meta tags para PWA (Transformar em App no Celular) -->
+    <meta name="theme-color" content="#D6001C">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Ocorrências CV">
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- Biblioteca do Supabase -->
+    <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Biblioteca para gerar PDF -->
+    <!-- jsPDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
@@ -22,12 +29,12 @@
 </head>
 <body class="bg-[#F5F5F5] text-[#202020] font-sans antialiased pb-10">
 
-    <!-- TELA DE LOGIN (PADRÃO SEGURO) -->
+    <!-- TELA DE LOGIN (BLOQUEIO SEGURO) -->
     <div id="telaLogin" class="fixed inset-0 bg-gray-100 flex items-center justify-center z-50 px-4">
         <div class="bg-white p-6 rounded-xl shadow-md border border-[#D9D9D9] w-full max-w-sm text-center">
             <div class="w-16 h-16 bg-cv-red text-white flex items-center justify-center rounded-full mx-auto mb-3 text-2xl font-bold">🚨</div>
             <h2 class="text-lg font-bold text-cv-red uppercase tracking-wide">Cruz Vermelha Brasileira</h2>
-            <p class="text-xs text-gray-500 mb-4">Polo Bragança | Registro de Ocorrências</p>
+            <p class="text-xs text-gray-500 mb-4">Filial do Pará | Registro de Ocorrências</p>
             
             <form id="loginForm" class="space-y-3 text-left">
                 <div>
@@ -70,7 +77,8 @@
                 </div>
 
                 <form id="ocorrenciaForm" class="space-y-4">
-                    <input type="hidden" id="editId"> <!-- Campo invisível para ID de edição -->
+                    <input type="hidden" id="editId"> <!-- Controle de Edição -->
+                    <input type="hidden" id="geolocalizacao_coords"> <!-- Coordenadas GPS -->
 
                     <!-- Data e Hora (Automáticos, mas Editáveis) -->
                     <div class="grid grid-cols-2 gap-2">
@@ -113,19 +121,27 @@
                     <!-- Descrição Longa da Ocorrência -->
                     <div>
                         <label class="block text-xs font-semibold uppercase text-gray-600">Descrição da Ocorrência</label>
-                        <textarea id="descricao_ocorrencia" rows="5" required placeholder="Descreva aqui detalhadamente todo o acontecimento, procedimentos realizados e observações..." class="w-full p-2 border border-[#D9D9D9] rounded focus:outline-none focus:border-red-500 text-sm min-h-[120px]"></textarea>
+                        <textarea id="descricao_ocorrencia" rows="5" required placeholder="Descreva aqui detalhadamente todo o acontecimento, procedimentos realizados..." class="w-full p-2 border border-[#D9D9D9] rounded focus:outline-none focus:border-red-500 text-sm min-h-[120px]"></textarea>
                     </div>
 
-                    <!-- Foto (Opcional) -->
+                    <!-- ✅ 📍 FOTO COM GEOLOCALIZAÇÃO AUTOMÁTICA (COMPATÍVEL COM IPHONE 11) -->
                     <div class="bg-gray-50 p-3 rounded-lg border border-dashed border-gray-400 text-center">
-                        <label class="block text-xs font-bold uppercase text-gray-600 mb-2">📷 Fotografar Evidência (Opcional)</label>
+                        <label class="block text-xs font-bold uppercase text-gray-600 mb-1">📷 Foto com Geolocalização GPS (Opcional)</label>
+                        <p class="text-[10px] text-gray-500 mb-2">A imagem receberá o carimbo automático de GPS, data e hora.</p>
+                        
+                        <!-- Input direto acionando a câmera -->
                         <input type="file" id="fotoInput" accept="image/*" capture="environment" class="hidden">
-                        <button type="button" onclick="document.getElementById('fotoInput').click()" class="bg-gray-600 text-white px-3 py-1.5 rounded text-xs font-semibold shadow hover:bg-gray-700 transition">
-                            Tirar Foto ou Galeria
+                        
+                        <button type="button" onclick="iniciarCapturaOcorrencia()" class="bg-gray-700 text-white px-3 py-2 rounded text-xs font-semibold shadow hover:bg-gray-800 transition flex items-center justify-center gap-1 mx-auto">
+                            <span>📍</span> Tirar Foto / Selecionar Imagem
                         </button>
-                        <button type="button" id="btnRemoverFoto" onclick="removerFotoAnexada()" class="hidden ml-2 bg-red-600 text-white px-2 py-1.5 rounded text-xs font-semibold shadow hover:bg-red-700 transition">✖</button>
-                        <div id="previewContainer" class="mt-2 hidden flex justify-center">
-                            <img id="fotoPreview" src="" class="h-28 w-full object-cover rounded-md border shadow-sm max-w-xs">
+                        
+                        <div id="statusGps" class="text-[10px] text-amber-700 mt-1 font-semibold hidden">Obtendo coordenadas do satélite...</div>
+
+                        <div id="previewContainer" class="mt-3 hidden flex flex-col items-center">
+                            <img id="fotoPreview" src="" class="h-44 w-full object-contain rounded-md border shadow-sm bg-black">
+                            <button type="button" id="btnRemoverFoto" onclick="removerFotoAnexada()" class="mt-1.5 bg-red-600 text-white px-2 py-1 rounded text-[10px] font-semibold hover:bg-red-700 transition">✖ Remover Foto</button>
+                            <p class="text-[10px] text-green-700 font-bold mt-1">✓ Foto Carimbada e Anexada</p>
                         </div>
                     </div>
 
@@ -147,9 +163,8 @@
                     <h2 class="text-lg font-bold text-cv-red">Histórico de Ocorrências</h2>
                 </div>
                 
-                <!-- Barra de Pesquisa Completa -->
                 <div class="space-y-2 mb-4 bg-gray-50 p-2.5 rounded border border-[#D9D9D9]">
-                    <input type="text" id="buscaInput" oninput="buscarOcorrencias()" placeholder="🔎 Nome, responsável ou palavras-chave da descrição..." class="w-full p-2 border border-[#D9D9D9] rounded bg-white focus:outline-none focus:border-red-500 text-xs">
+                    <input type="text" id="buscaInput" oninput="buscarOcorrencias()" placeholder="🔎 Nome, responsável ou palavras-chave..." class="w-full p-2 border border-[#D9D9D9] rounded bg-white focus:outline-none focus:border-red-500 text-xs">
                     
                     <div class="flex gap-2 items-center">
                         <label class="text-[11px] font-bold text-gray-500 uppercase whitespace-nowrap">Por Data:</label>
@@ -158,7 +173,6 @@
                     </div>
                 </div>
 
-                <!-- Lista de Cards -->
                 <div id="listaOcorrencias" class="space-y-3 max-h-96 overflow-y-auto pr-1">
                     <p class="text-center text-xs text-gray-400">Carregando registros...</p>
                 </div>
@@ -169,18 +183,100 @@
     <!-- SCRIPT LOGIC -->
     <script>
         // CONFIGURAÇÃO DO SUPABASE
-        // ⚠️ SUBSTITUA COM AS SUAS CREDENCIAIS DO SUPABASE
         const SUPABASE_URL = "https://ucfuqkksyzympgvuujhv.supabase.co";
         const SUPABASE_KEY = "sb_publishable_-6VJMj04631U4cMQyiOZdQ_jXQuVF1O";
-        
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         let fotoBase64 = "";
 
-        // Inicializar com Data e Hora Atuais nos inputs
         function resetarDataHoraCampos() {
             const agora = new Date();
             document.getElementById('data_ocorrencia').value = agora.toISOString().split('T')[0];
             document.getElementById('hora_ocorrencia').value = agora.toTimeString().split(' ')[0].substring(0,5);
+        }
+
+        // 📍 CAPTURA DE FOTO COM CARIMBO DE GPS E DATA/HORA (COMPATÍVEL COM IPHONE)
+        function iniciarCapturaOcorrencia() {
+            const statusGps = document.getElementById('statusGps');
+            statusGps.textContent = "Obtendo GPS...";
+            statusGps.classList.remove('hidden');
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude.toFixed(6);
+                        const lon = position.coords.longitude.toFixed(6);
+                        document.getElementById('geolocalizacao_coords').value = `${lat}, ${lon}`;
+                        statusGps.textContent = "GPS Detectado!";
+                    },
+                    (error) => {
+                        console.warn("GPS Indisponível/Negado:", error);
+                        document.getElementById('geolocalizacao_coords').value = "Sem Sinal GPS";
+                        statusGps.textContent = "Foto sem GPS (Apenas Data/Hora).";
+                    },
+                    { enableHighAccuracy: true, timeout: 5000 }
+                );
+            }
+
+            // Clique direto exigido pelo Safari do iPhone
+            document.getElementById('fotoInput').click();
+        }
+
+        // Processamento do Canvas para "Desenhar" o Carimbo no rodapé da Foto
+        document.getElementById('fotoInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+
+                        // Desenha a foto original
+                        ctx.drawImage(img, 0, 0);
+
+                        // Tarja preta transparente no rodapé
+                        const alturaFaixa = Math.max(60, img.height * 0.08);
+                        ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+                        ctx.fillRect(0, img.height - alturaFaixa, img.width, alturaFaixa);
+
+                        // Textos do carimbo
+                        ctx.fillStyle = "#FFFFFF";
+                        const tamanhoFonte = Math.max(14, img.height * 0.022);
+                        ctx.font = `bold ${tamanhoFonte}px sans-serif`;
+
+                        const coords = document.getElementById('geolocalizacao_coords').value || "Sem Sinal GPS";
+                        const agora = new Date().toLocaleString('pt-BR');
+
+                        const textoLinha1 = `CRUZ VERMELHA BRASILEIRA - PA | ${agora}`;
+                        const textoLinha2 = `📍 LAT/LON: ${coords}`;
+
+                        ctx.fillText(textoLinha1, 15, img.height - (alturaFaixa * 0.55));
+                        ctx.fillStyle = "#FFCC00"; // Amarelo para destacar o GPS
+                        ctx.fillText(textoLinha2, 15, img.height - (alturaFaixa * 0.18));
+
+                        // Converte para Base64 com carimbo
+                        fotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
+                        document.getElementById('fotoPreview').src = fotoBase64;
+                        document.getElementById('previewContainer').classList.remove('hidden');
+                        document.getElementById('statusGps').classList.add('hidden');
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function removerFotoAnexada() {
+            fotoBase64 = "";
+            document.getElementById('fotoInput').value = "";
+            document.getElementById('fotoPreview').src = "";
+            document.getElementById('previewContainer').classList.add('hidden');
+            document.getElementById('geolocalizacao_coords').value = "";
         }
 
         // LOGIN DO VOLUNTÁRIO
@@ -216,29 +312,6 @@
             buscarOcorrencias();
         }
 
-        // Captura de Imagem e Conversão Base64
-        document.getElementById('fotoInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    fotoBase64 = event.target.result;
-                    document.getElementById('fotoPreview').src = fotoBase64;
-                    document.getElementById('previewContainer').classList.remove('hidden');
-                    document.getElementById('btnRemoverFoto').classList.remove('hidden');
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        function removerFotoAnexada() {
-            fotoBase64 = "";
-            document.getElementById('fotoInput').value = "";
-            document.getElementById('fotoPreview').src = "";
-            document.getElementById('previewContainer').classList.add('hidden');
-            document.getElementById('btnRemoverFoto').classList.add('hidden');
-        }
-
         // Salvar Nova ou Atualizar Existente
         document.getElementById('ocorrenciaForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -253,31 +326,31 @@
                 nome_responsavel: document.getElementById('nome_responsavel').value,
                 descricao_ocorrencia: document.getElementById('descricao_ocorrencia').value,
                 foto: fotoBase64,
+                geolocalizacao: document.getElementById('geolocalizacao_coords').value || null,
                 updated_at: new Date().toISOString()
             };
 
             try {
                 if (idEdicao) {
-                    // MODO ATUALIZAÇÃO (EDITAR)
                     const { error } = await supabaseClient.from('ocorrencias').update(dados).eq('id', idEdicao);
                     if (error) throw error;
                     alert("Ocorrência atualizada com sucesso!");
                 } else {
-                    // MODO INSERÇÃO (NOVA)
                     const { data, error } = await supabaseClient.from('ocorrencias').insert([dados]).select();
                     if (error) throw error;
-                    alert(`Ocorrência Nº ${data[0].numero} registrada no banco.`);
+                    alert(`Ocorrência Nº ${data[0].numero} salva com foto geolocalizada.`);
+                    gerarPDFOcorrencia(data[0]);
                 }
                 
                 cancelarEdicao();
                 buscarOcorrencias();
             } catch (err) {
-                alert("Erro ao salvar operação na nuvem. Verifique a conexão.");
+                alert("Erro ao conectar com a nuvem.");
                 console.error(err);
             }
         });
 
-        // Listar e Buscar Registros (Estilo Google Forms Dinâmico)
+        // Listar e Buscar Registros
         async function buscarOcorrencias() {
             const query = document.getElementById('buscaInput').value;
             const dataFiltro = document.getElementById('filtroData').value;
@@ -285,7 +358,7 @@
             lista.innerHTML = "";
 
             if (!navigator.onLine) {
-                lista.innerHTML = '<p class="text-center text-xs text-amber-600 font-bold">Modo de consulta requer conexão de dados ativa.</p>';
+                lista.innerHTML = '<p class="text-center text-xs text-amber-600 font-bold">Modo de consulta requer internet ativa.</p>';
                 return;
             }
 
@@ -308,7 +381,6 @@
             data.forEach(item => {
                 const resumo = item.descricao_ocorrencia.length > 60 ? item.descricao_ocorrencia.substring(0, 60) + "..." : item.descricao_ocorrencia;
                 
-                // Mapeamento de Cores para Status
                 let corStatus = "bg-gray-100 text-gray-800";
                 if(item.status === "Aberta") corStatus = "bg-red-100 text-red-800";
                 if(item.status === "Em Atendimento") corStatus = "bg-amber-100 text-amber-800";
@@ -336,12 +408,10 @@
             });
         }
 
-        // Visualizar Alerta Completo em tela
         function visualizarDetalhes(item) {
-            alert(`OCORRÊNCIA REGISTRADA Nº ${item.numero}\n\nStatus: ${item.status}\nPaciente/Vítima: ${item.nome_vitima}\nResponsável: ${item.nome_responsavel || 'Nenhum'}\nNascimento: ${item.data_nascimento || 'Não informado'}\n\nRelato Completo:\n${item.descricao_ocorrencia}`);
+            alert(`OCORRÊNCIA REGISTRADA Nº ${item.numero}\n\nStatus: ${item.status}\nPaciente/Vítima: ${item.nome_vitima}\nGPS: ${item.geolocalizacao || 'Registrado na foto'}\n\nRelato Completo:\n${item.descricao_ocorrencia}`);
         }
 
-        // Carregar dados nos inputs para permitir Edição
         function carregarParaEdicao(item) {
             document.getElementById('editId').value = item.id;
             document.getElementById('data_ocorrencia').value = item.data_ocorrencia;
@@ -356,7 +426,8 @@
                 fotoBase64 = item.foto;
                 document.getElementById('fotoPreview').src = item.foto;
                 document.getElementById('previewContainer').classList.remove('hidden');
-                document.getElementById('btnRemoverFoto').classList.remove('hidden');
+                document.getElementById('statusGps').classList.add('hidden');
+                document.getElementById('geolocalizacao_coords').value = item.geolocalizacao || "";
             } else {
                 removerFotoAnexada();
             }
@@ -377,9 +448,8 @@
             document.getElementById('btnCancelarEdicao').classList.add('hidden');
         }
 
-        // Exclusão Direta
         async function deletarOcorrencia(id) {
-            if(confirm("Tem certeza absoluta de que deseja apagar permanentemente este registro do histórico?")) {
+            if(confirm("Tem certeza que deseja apagar permanentemente este registro?")) {
                 const { error } = await supabaseClient.from('ocorrencias').delete().eq('id', id);
                 if(error) alert("Erro ao deletar.");
                 else {
@@ -389,12 +459,11 @@
             }
         }
 
-        // Impressão e Geração de PDF Oficial
+        // Geração de PDF Oficial da Ocorrência CV
         function gerarPDFOcorrencia(item) {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
-            // Cabeçalho da Cruz Vermelha
             doc.setFillColor(214, 0, 28);
             doc.rect(10, 10, 190, 8, 'F');
             
@@ -403,23 +472,20 @@
             doc.setTextColor(255, 255, 255);
             doc.text("CRUZ VERMELHA BRASILEIRA - FILIAL DO ESTADO DO PARÁ", 15, 16);
             
-            // Informações do Registro
             doc.setTextColor(32, 32, 32);
             doc.setFontSize(14);
             doc.text(`REGISTRO DE OCORRÊNCIA Nº: ${item.numero}`, 10, 32);
             doc.setFontSize(10);
-            doc.text(`Status do Registro: ${item.status.toUpperCase()}`, 140, 32);
+            doc.text(`Status: ${item.status.toUpperCase()}`, 155, 32);
             
             doc.line(10, 36, 200, 36);
 
-            // Detalhes Cronológicos
             doc.setFont("Helvetica", "bold");
-            doc.text("CRONOLOGIA E HISTÓRICO", 10, 44);
+            doc.text("CRONOLOGIA E LOCALIZAÇÃO", 10, 44);
             doc.setFont("Helvetica", "normal");
             doc.text(`Data/Hora do Fato: ${item.data_ocorrencia} às ${item.hora_ocorrencia.substring(0,5)}`, 10, 50);
-            doc.text(`Data de Emissão do Documento: ${new Date(item.created_at).toLocaleDateString()} (Última alteração: ${new Date(item.updated_at).toLocaleDateString()})`, 10, 56);
+            doc.text(`Coordenadas de GPS: ${item.geolocalizacao || 'Registrado na foto carimbada'}`, 10, 56);
 
-            // Dados da Vítima/Atendido
             doc.setFont("Helvetica", "bold");
             doc.text("DADOS DO ATENDIDO / PACIENTE", 10, 68);
             doc.setFont("Helvetica", "normal");
@@ -427,43 +493,41 @@
             doc.text(`Data de Nascimento: ${item.data_nascimento ? item.data_nascimento : 'Não informada'}`, 10, 80);
             doc.text(`Responsável Presente: ${item.nome_responsavel ? item.nome_responsavel.toUpperCase() : 'NÃO DECLARADO / AUSENTE'}`, 10, 86);
 
-            // Linha Divisória para Relato Grande
             doc.line(10, 94, 200, 94);
             doc.setFont("Helvetica", "bold");
             doc.text("RELATO DETALHADO DA OCORRÊNCIA", 10, 102);
             
             doc.setFont("Helvetica", "normal");
-            // Divide o texto longo automaticamente para caber nas margens do PDF
             const linhasDescricao = doc.splitTextToSize(item.descricao_ocorrencia, 180);
             doc.text(linhasDescricao, 10, 110);
 
-            // Calcular espaço dinâmico ocupado pelo texto para renderizar a imagem abaixo dele
             let alturaAtual = 110 + (linhasDescricao.length * 6);
 
-            // Adiciona a foto da ocorrência se houver
             if (item.foto) {
-                if(alturaAtual > 200) { // Se o texto for muito longo, empurra a foto para uma nova folha
-                    doc.addPage();
-                    alturaAtual = 20;
-                }
+                if(alturaAtual > 210) { doc.addPage(); alturaAtual = 20; }
                 try {
                     doc.setFont("Helvetica", "bold");
-                    doc.text("EVIDÊNCIA FOTOGRÁFICA ANEXADA", 10, alturaAtual);
-                    doc.addImage(item.foto, 'JPEG', 10, alturaAtual + 5, 75, 55);
-                    alturaAtual += 65;
+                    doc.text("EVIDÊNCIA FOTOGRÁFICA CARIMBADA COM GPS", 10, alturaAtual + 5);
+                    doc.addImage(item.foto, 'JPEG', 10, alturaAtual + 10, 80, 60);
+                    alturaAtual += 75;
                 } catch(e) { console.error("Erro na imagem do PDF", e); }
             }
 
-            // Rodapé de Identificação do Ecossistema Integrado requisitado
-            if(alturaAtual > 250) { doc.addPage(); alturaAtual = 20; }
+            if(alturaAtual > 260) { doc.addPage(); alturaAtual = 20; }
             doc.setFontSize(8);
             doc.setFont("Helvetica", "italic");
-            doc.text("Documento oficial gerado de forma integrada via plataforma Busca & Paradeiro CV.", 10, alturaAtual + 15);
+            doc.text("Documento oficial gerado via plataforma Registro de Ocorrências CV.", 10, alturaAtual + 10);
 
             doc.save(`Ocorrencia_${item.numero}_${item.nome_vitima.replace(/ /g, "_")}.pdf`);
         }
 
-        // Auto login se houver sessão salva em cache
+        // REGISTRO DE SERVICE WORKER PARA APP (PWA)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW PWA Ocorrencias:', err));
+            });
+        }
+
         window.onload = async () => {
             const { data } = await supabaseClient.auth.getSession();
             if (data?.session) {
