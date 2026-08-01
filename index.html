@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro de Ocorrências - Cruz Vermelha PA</title>
     
-    <!-- ✅ Meta tags para PWA (Transformar em App no Celular) -->
+    <!-- Meta tags para PWA -->
     <meta name="theme-color" content="#D6001C">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -64,7 +64,7 @@
             <button onclick="fazerLogout()" class="text-xs bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded">Sair</button>
         </header>
 
-        <main class="max-w-md mx-auto mt-4 px-4">
+        <main class="max-w-md mx-auto mt-4 px-4 space-y-6">
             
             <!-- SEÇÃO: FORMULÁRIO DE OCORRÊNCIA -->
             <section class="bg-white p-5 rounded-xl shadow-sm border border-[#D9D9D9]">
@@ -77,10 +77,10 @@
                 </div>
 
                 <form id="ocorrenciaForm" class="space-y-4">
-                    <input type="hidden" id="editId"> <!-- Controle de Edição -->
-                    <input type="hidden" id="geolocalizacao_coords"> <!-- Coordenadas GPS -->
+                    <input type="hidden" id="editId">
+                    <input type="hidden" id="geolocalizacao_coords">
 
-                    <!-- Data e Hora (Automáticos, mas Editáveis) -->
+                    <!-- Data e Hora -->
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="block text-xs font-semibold uppercase text-gray-600">Data do Fato</label>
@@ -118,18 +118,16 @@
                         <input type="text" id="nome_responsavel" placeholder="Nome do pai, mãe ou tutor" class="w-full p-2 border border-[#D9D9D9] rounded focus:outline-none focus:border-red-500 text-sm">
                     </div>
 
-                    <!-- Descrição Longa da Ocorrência -->
                     <div>
                         <label class="block text-xs font-semibold uppercase text-gray-600">Descrição da Ocorrência</label>
                         <textarea id="descricao_ocorrencia" rows="5" required placeholder="Descreva aqui detalhadamente todo o acontecimento, procedimentos realizados..." class="w-full p-2 border border-[#D9D9D9] rounded focus:outline-none focus:border-red-500 text-sm min-h-[120px]"></textarea>
                     </div>
 
-                    <!-- ✅ 📍 FOTO COM GEOLOCALIZAÇÃO AUTOMÁTICA (COMPATÍVEL COM IPHONE 11) -->
+                    <!-- FOTO COM GPS -->
                     <div class="bg-gray-50 p-3 rounded-lg border border-dashed border-gray-400 text-center">
                         <label class="block text-xs font-bold uppercase text-gray-600 mb-1">📷 Foto com Geolocalização GPS (Opcional)</label>
                         <p class="text-[10px] text-gray-500 mb-2">A imagem receberá o carimbo automático de GPS, data e hora.</p>
                         
-                        <!-- Input direto acionando a câmera -->
                         <input type="file" id="fotoInput" accept="image/*" capture="environment" class="hidden">
                         
                         <button type="button" onclick="iniciarCapturaOcorrencia()" class="bg-gray-700 text-white px-3 py-2 rounded text-xs font-semibold shadow hover:bg-gray-800 transition flex items-center justify-center gap-1 mx-auto">
@@ -156,29 +154,73 @@
                 </form>
             </section>
 
+            <!-- SEÇÃO: DASHBOARD & INDICADORES -->
+            <section class="bg-white p-5 rounded-xl shadow-sm border border-[#D9D9D9]">
+                <div class="flex items-center justify-between border-b pb-2 border-[#D9D9D9] mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-2xl">📊</span>
+                        <h2 class="text-lg font-bold text-cv-red">Dashboard & Estatísticas</h2>
+                    </div>
+                    <span id="labelPeriodoDash" class="text-[10px] text-gray-500 font-semibold bg-gray-100 px-2 py-1 rounded">Período: Total</span>
+                </div>
+
+                <!-- Métricas Principais -->
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                    <div class="bg-gray-50 p-2.5 rounded-lg border border-gray-200 text-center">
+                        <p class="text-[10px] font-bold text-gray-500 uppercase">Total Geral</p>
+                        <p id="dashTotal" class="text-xl font-black text-gray-800">0</p>
+                    </div>
+                    <div class="bg-red-50 p-2.5 rounded-lg border border-red-200 text-center">
+                        <p class="text-[10px] font-bold text-red-600 uppercase">Abertas</p>
+                        <p id="dashAbertas" class="text-xl font-black text-red-700">0</p>
+                    </div>
+                    <div class="bg-amber-50 p-2.5 rounded-lg border border-amber-200 text-center">
+                        <p class="text-[10px] font-bold text-amber-600 uppercase">Em Atendimento</p>
+                        <p id="dashAtendimento" class="text-xl font-black text-amber-700">0</p>
+                    </div>
+                    <div class="bg-green-50 p-2.5 rounded-lg border border-green-200 text-center">
+                        <p class="text-[10px] font-bold text-green-600 uppercase">Encerradas</p>
+                        <p id="dashEncerradas" class="text-xl font-black text-green-700">0</p>
+                    </div>
+                </div>
+
+                <div class="bg-blue-50 p-2 rounded border border-blue-200 text-center flex justify-between items-center px-4">
+                    <span class="text-xs font-bold text-blue-900">Taxa de Resolução:</span>
+                    <span id="dashTaxa" class="text-sm font-black text-blue-700">0%</span>
+                </div>
+            </section>
+
             <!-- SEÇÃO: HISTÓRICO DE OCORRÊNCIAS -->
-            <section class="bg-white p-5 rounded-xl shadow-sm border border-[#D9D9D9] mt-6">
-                <div class="flex items-center gap-2 mb-4 border-b pb-2 border-[#D9D9D9]">
-                    <span class="text-2xl">📋</span>
-                    <h2 class="text-lg font-bold text-cv-red">Histórico de Ocorrências</h2>
+            <section class="bg-white p-5 rounded-xl shadow-sm border border-[#D9D9D9]">
+                <div class="flex items-center justify-between mb-4 border-b pb-2 border-[#D9D9D9]">
+                    <div class="flex items-center gap-2">
+                        <span class="text-2xl">📋</span>
+                        <h2 class="text-lg font-bold text-cv-red">Histórico de Ocorrências</h2>
+                    </div>
                 </div>
                 
-                <div class="space-y-2 mb-4 bg-gray-50 p-2.5 rounded border border-[#D9D9D9]">
+                <!-- Filtros e Período Customizado -->
+                <div class="space-y-2 mb-4 bg-gray-50 p-3 rounded border border-[#D9D9D9]">
                     <input type="text" id="buscaInput" oninput="buscarOcorrencias()" placeholder="🔎 Nome, responsável ou palavras-chave..." class="w-full p-2 border border-[#D9D9D9] rounded bg-white focus:outline-none focus:border-red-500 text-xs">
                     
-                    <!-- Filtro por Período Personalizado (De / Até) -->
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="text-[10px] font-bold text-gray-500 uppercase block">De:</label>
+                            <label class="text-[10px] font-bold text-gray-600 uppercase block">De (Data Inicial):</label>
                             <input type="date" id="filtroDataInicio" onchange="buscarOcorrencias()" class="w-full p-1.5 border border-[#D9D9D9] rounded bg-white focus:outline-none focus:border-red-500 text-xs">
                         </div>
                         <div>
-                            <label class="text-[10px] font-bold text-gray-500 uppercase block">Até:</label>
+                            <label class="text-[10px] font-bold text-gray-600 uppercase block">Até (Data Final):</label>
                             <input type="date" id="filtroDataFim" onchange="buscarOcorrencias()" class="w-full p-1.5 border border-[#D9D9D9] rounded bg-white focus:outline-none focus:border-red-500 text-xs">
                         </div>
                     </div>
-                    <div class="flex justify-end">
+
+                    <div class="flex justify-between items-center pt-1 border-t border-gray-200">
                         <button onclick="limparFiltroData()" class="text-[10px] text-red-600 hover:underline font-bold">Limpar Período</button>
+                        
+                        <!-- BOTÃO DE EXPORTAR DASHBOARD / RELATÓRIO DO PERÍODO EM PDF -->
+                        <button onclick="gerarPDFDashboard()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded text-xs font-bold shadow flex items-center gap-1">
+                            📊 Exportar Relatório PDF
+                        </button>
                     </div>
                 </div>
 
@@ -191,12 +233,12 @@
 
     <!-- SCRIPT LOGIC -->
     <script>
-        // CONFIGURAÇÃO DO SUPABASE
         const SUPABASE_URL = "https://ucfuqkksyzympgvuujhv.supabase.co";
         const SUPABASE_KEY = "sb_publishable_-6VJMj04631U4cMQyiOZdQ_jXQuVF1O";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let fotoBase64 = "";
+        let ocorrenciasFiltradasAtuais = []; // Guarda a lista filtrada para o PDF do Dashboard
 
         function resetarDataHoraCampos() {
             const agora = new Date();
@@ -204,7 +246,6 @@
             document.getElementById('hora_ocorrencia').value = agora.toTimeString().split(' ')[0].substring(0,5);
         }
 
-        // 📍 CAPTURA DE FOTO COM CARIMBO DE GPS E DATA/HORA (COMPATÍVEL COM IPHONE)
         function iniciarCapturaOcorrencia() {
             const statusGps = document.getElementById('statusGps');
             statusGps.textContent = "Obtendo GPS...";
@@ -226,12 +267,9 @@
                     { enableHighAccuracy: true, timeout: 5000 }
                 );
             }
-
-            // Clique direto exigido pelo Safari do iPhone
             document.getElementById('fotoInput').click();
         }
 
-        // Processamento do Canvas para "Desenhar" o Carimbo no rodapé da Foto
         document.getElementById('fotoInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
@@ -244,16 +282,12 @@
 
                         canvas.width = img.width;
                         canvas.height = img.height;
-
-                        // Desenha a foto original
                         ctx.drawImage(img, 0, 0);
 
-                        // Tarja preta transparente no rodapé
                         const alturaFaixa = Math.max(60, img.height * 0.08);
                         ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
                         ctx.fillRect(0, img.height - alturaFaixa, img.width, alturaFaixa);
 
-                        // Textos do carimbo
                         ctx.fillStyle = "#FFFFFF";
                         const tamanhoFonte = Math.max(14, img.height * 0.022);
                         ctx.font = `bold ${tamanhoFonte}px sans-serif`;
@@ -265,10 +299,9 @@
                         const textoLinha2 = `📍 LAT/LON: ${coords}`;
 
                         ctx.fillText(textoLinha1, 15, img.height - (alturaFaixa * 0.55));
-                        ctx.fillStyle = "#FFCC00"; // Amarelo para destacar o GPS
+                        ctx.fillStyle = "#FFCC00";
                         ctx.fillText(textoLinha2, 15, img.height - (alturaFaixa * 0.18));
 
-                        // Converte para Base64 com carimbo
                         fotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
                         document.getElementById('fotoPreview').src = fotoBase64;
                         document.getElementById('previewContainer').classList.remove('hidden');
@@ -288,7 +321,6 @@
             document.getElementById('geolocalizacao_coords').value = "";
         }
 
-        // LOGIN DO VOLUNTÁRIO
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const email = document.getElementById('loginEmail').value;
@@ -322,7 +354,6 @@
             buscarOcorrencias();
         }
 
-        // Salvar Nova ou Atualizar Existente
         document.getElementById('ocorrenciaForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
@@ -348,19 +379,18 @@
                 } else {
                     const { data, error } = await supabaseClient.from('ocorrencias').insert([dados]).select();
                     if (error) throw error;
-                    alert(`Ocorrência salva com foto geolocalizada.`);
+                    alert(`Ocorrência salva com sucesso.`);
                     gerarPDFOcorrencia(data[0]);
                 }
                 
                 cancelarEdicao();
                 buscarOcorrencias();
             } catch (err) {
-                alert("Erro ao conectar com a nuvem.");
+                alert("Erro ao salvar no banco de dados.");
                 console.error(err);
             }
         });
 
-        // Listar e Buscar Registros com Filtro de Período e Numeração Sequencial
         async function buscarOcorrencias() {
             const query = document.getElementById('buscaInput').value;
             const dataInicio = document.getElementById('filtroDataInicio').value;
@@ -369,7 +399,7 @@
             lista.innerHTML = "";
 
             if (!navigator.onLine) {
-                lista.innerHTML = '<p class="text-center text-xs text-amber-600 font-bold">Modo de consulta requer internet ativa.</p>';
+                lista.innerHTML = '<p class="text-center text-xs text-amber-600 font-bold">Modo offline. Requer conexão.</p>';
                 return;
             }
 
@@ -389,13 +419,15 @@
 
             if (error || !data || data.length === 0) {
                 lista.innerHTML = '<p class="text-center text-xs text-gray-400">Nenhum registro localizado.</p>';
+                ocorrenciasFiltradasAtuais = [];
+                atualizarDashboard([]);
                 return;
             }
 
+            ocorrenciasFiltradasAtuais = data;
             const totalRegistros = data.length;
 
             data.forEach((item, index) => {
-                // Numeração sequencial contínua visual (1, 2, 3...)
                 const numeroSequencial = totalRegistros - index;
                 item.numeroExibicao = numeroSequencial;
 
@@ -427,6 +459,35 @@
                 `;
                 lista.appendChild(div);
             });
+
+            atualizarDashboard(data);
+        }
+
+        // Atualiza Cards Estatísticos
+        function atualizarDashboard(dados) {
+            const total = dados.length;
+            const abertas = dados.filter(d => d.status === 'Aberta').length;
+            const atendimento = dados.filter(d => d.status === 'Em Atendimento').length;
+            const encerradas = dados.filter(d => d.status === 'Encerrada').length;
+            const taxa = total > 0 ? Math.round((encerradas / total) * 100) : 0;
+
+            document.getElementById('dashTotal').textContent = total;
+            document.getElementById('dashAbertas').textContent = abertas;
+            document.getElementById('dashAtendimento').textContent = atendimento;
+            document.getElementById('dashEncerradas').textContent = encerradas;
+            document.getElementById('dashTaxa').textContent = `${taxa}%`;
+
+            const dataInicio = document.getElementById('filtroDataInicio').value;
+            const dataFim = document.getElementById('filtroDataFim').value;
+            const label = document.getElementById('labelPeriodoDash');
+
+            if(dataInicio || dataFim) {
+                const de = dataInicio ? dataInicio.split('-').reverse().join('/') : 'Início';
+                const ate = dataFim ? dataFim.split('-').reverse().join('/') : 'Atual';
+                label.textContent = `Período: ${de} até ${ate}`;
+            } else {
+                label.textContent = `Período: Total Geral`;
+            }
         }
 
         async function marcarComoEncerrada(id) {
@@ -446,7 +507,7 @@
         }
 
         function visualizarDetalhes(item) {
-            alert(`OCORRÊNCIA REGISTRADA Nº ${item.numeroExibicao || item.numero || item.id}\n\nStatus: ${item.status}\nPaciente/Vítima: ${item.nome_vitima}\nGPS: ${item.geolocalizacao || 'Registrado na foto'}\n\nRelato Completo:\n${item.descricao_ocorrencia}`);
+            alert(`OCORRÊNCIA REGISTRADA Nº ${item.numeroExibicao || item.id}\n\nStatus: ${item.status}\nPaciente/Vítima: ${item.nome_vitima}\nGPS: ${item.geolocalizacao || 'Registrado na foto'}\n\nRelato Completo:\n${item.descricao_ocorrencia}`);
         }
 
         function carregarParaEdicao(item) {
@@ -496,11 +557,11 @@
             }
         }
 
-        // Geração de PDF Oficial da Ocorrência CV
+        // 📄 PDF DA OCORRÊNCIA INDIVIDUAL
         function gerarPDFOcorrencia(item) {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            const numRegistro = item.numeroExibicao || item.numero || item.id;
+            const numRegistro = item.numeroExibicao || item.id;
 
             doc.setFillColor(214, 0, 28);
             doc.rect(10, 10, 190, 8, 'F');
@@ -559,10 +620,110 @@
             doc.save(`Ocorrencia_${numRegistro}_${item.nome_vitima.replace(/ /g, "_")}.pdf`);
         }
 
-        // REGISTRO DE SERVICE WORKER PARA APP (PWA)
+        // 📊 GERADOR DE RELATÓRIO PDF DE DASHBOARDS (PERÍODO ESPECÍFICO DE / ATÉ)
+        function gerarPDFDashboard() {
+            if (!ocorrenciasFiltradasAtuais || ocorrenciasFiltradasAtuais.length === 0) {
+                alert("Não há dados no período selecionado para gerar o relatório.");
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const dataInicio = document.getElementById('filtroDataInicio').value;
+            const dataFim = document.getElementById('filtroDataFim').value;
+            
+            const deStr = dataInicio ? dataInicio.split('-').reverse().join('/') : 'Início do Registro';
+            const ateStr = dataFim ? dataFim.split('-').reverse().join('/') : 'Data Atual';
+
+            // Cabeçalho Institucional
+            doc.setFillColor(214, 0, 28);
+            doc.rect(10, 10, 190, 10, 'F');
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(11);
+            doc.setTextColor(255, 255, 255);
+            doc.text("CRUZ VERMELHA BRASILEIRA - FILIAL PARÁ / POLO BRAGANÇA", 15, 16.5);
+
+            doc.setTextColor(32, 32, 32);
+            doc.setFontSize(14);
+            doc.text("RELATÓRIO ESTATÍSTICO DE OCORRÊNCIAS", 10, 30);
+            
+            doc.setFontSize(10);
+            doc.setFont("Helvetica", "normal");
+            doc.text(`Período de Análise: De ${deStr} até ${ateStr}`, 10, 36);
+            doc.text(`Emissão do Relatório: ${new Date().toLocaleString('pt-BR')}`, 10, 42);
+            doc.line(10, 45, 200, 45);
+
+            // Métricas Consolidadas do Período
+            const total = ocorrenciasFiltradasAtuais.length;
+            const abertas = ocorrenciasFiltradasAtuais.filter(d => d.status === 'Aberta').length;
+            const atendimento = ocorrenciasFiltradasAtuais.filter(d => d.status === 'Em Atendimento').length;
+            const encerradas = ocorrenciasFiltradasAtuais.filter(d => d.status === 'Encerrada').length;
+            const taxa = total > 0 ? Math.round((encerradas / total) * 100) : 0;
+
+            doc.setFont("Helvetica", "bold");
+            doc.text("RESUMO EXECUTIVO DO PERÍODO (DASHBOARD)", 10, 53);
+
+            doc.setFillColor(245, 245, 245);
+            doc.rect(10, 56, 190, 24, 'F');
+            doc.setDrawColor(200, 200, 200);
+            doc.rect(10, 56, 190, 24, 'S');
+
+            doc.setFontSize(9);
+            doc.setFont("Helvetica", "bold");
+            doc.text(`Total de Atendimentos: ${total}`, 15, 64);
+            doc.text(`Ocorrências Abertas: ${abertas}`, 15, 72);
+            doc.text(`Em Atendimento: ${atendimento}`, 80, 64);
+            doc.text(`Encerradas: ${encerradas}`, 80, 72);
+            doc.text(`Taxa de Resolução: ${taxa}%`, 140, 68);
+
+            // Tabela com a Lista Detalhada
+            doc.setFontSize(11);
+            doc.text("RELAÇÃO NOMINAL DAS OCORRÊNCIAS", 10, 90);
+
+            let y = 98;
+            doc.setFontSize(8);
+            doc.setFont("Helvetica", "bold");
+            doc.setFillColor(230, 230, 230);
+            doc.rect(10, y - 5, 190, 7, 'F');
+            doc.text("Nº", 12, y);
+            doc.text("Data/Hora", 25, y);
+            doc.text("Paciente / Vítima", 65, y);
+            doc.text("Status", 145, y);
+            doc.text("GPS", 172, y);
+
+            doc.setFont("Helvetica", "normal");
+            y += 7;
+
+            ocorrenciasFiltradasAtuais.forEach((item) => {
+                if (y > 275) {
+                    doc.addPage();
+                    y = 20;
+                }
+                
+                const num = item.numeroExibicao || item.id;
+                const dataHora = `${item.data_ocorrencia} ${item.hora_ocorrencia.substring(0,5)}`;
+                const nome = item.nome_vitima.length > 35 ? item.nome_vitima.substring(0, 35) + "..." : item.nome_vitima;
+                const status = item.status;
+                const temGps = item.geolocalizacao || item.foto ? "Sim" : "Não";
+
+                doc.text(String(num), 12, y);
+                doc.text(dataHora, 25, y);
+                doc.text(nome, 65, y);
+                doc.text(status, 145, y);
+                doc.text(temGps, 172, y);
+
+                doc.setDrawColor(230, 230, 230);
+                doc.line(10, y + 2, 200, y + 2);
+                y += 7;
+            });
+
+            doc.save(`Dashboard_Ocorrencias_CV_${deStr.replace(/\//g,'-')}_a_${ateStr.replace(/\//g,'-')}.pdf`);
+        }
+
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW PWA Ocorrencias:', err));
+                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW PWA:', err));
             });
         }
 
